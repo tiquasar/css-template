@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard.css') }}"
+    />
+  </head>
+  <body>
+    <!-- Logout button (increased separation from Dark Mode button) -->
+    <form
+      action="/logout"
+      method="post"
+      style="position: absolute; top: 20px; right: 180px"
+    >
+      <button type="submit" class="toggle-btn">Logout</button>
+    </form>
+
+    <!-- Dark mode toggle button (increased separation from Logout button) -->
+    <button
+      id="toggle-btn"
+      class="toggle-btn"
+      style="position: absolute; top: 20px; right: 20px"
+    >
+      Dark Mode
+    </button>
+
+    <div class="container">
+      <!-- Light grey side ribbon with logo -->
+      <div class="side-ribbon">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" />
+      </div>
+
+      <!-- Main content area -->
+      <div class="main-content">
+        <div class="main-title">
+          <h1>Test Data Generator (LLM)</h1>
+        </div>
+
+        <!-- File Upload Form -->
+        <label for="file" class="file-label"
+          >Select an XLSX file to upload:</label
+        >
+        <input type="file" id="file" accept=".xlsx" required />
+        <button id="upload-btn" class="upload-btn">Upload</button>
+
+        <!-- Loading bar (hidden initially) -->
+        <div id="loading-bar" class="loading-bar" style="display: none">
+          <p>Test Data Generation in Progress...</p>
+          <div class="progress-bar">
+            <div class="progress"></div>
+          </div>
+        </div>
+
+        <!-- Output Container (hidden initially) -->
+        <div
+          id="output-container"
+          class="output-container"
+          style="display: none"
+        >
+          <h2>Generated Output:</h2>
+          <div id="output-box" class="output-box"></div>
+          <a
+            href="{{ url_for('download_csv') }}"
+            id="download-btn"
+            class="download-btn"
+            style="display: none"
+            >Download as CSV</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Script to handle file upload -->
+    <script>
+      document
+        .getElementById("upload-btn")
+        .addEventListener("click", function () {
+          const fileInput = document.getElementById("file");
+          const file = fileInput.files[0];
+
+          if (!file) {
+            alert("Please select a file!");
+            return;
+          }
+
+          if (!file.name.endsWith(".xlsx")) {
+            alert("Only XLSX files are allowed!");
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append("file", file);
+
+          // Show loading bar
+          const loadingBar = document.getElementById("loading-bar");
+          loadingBar.style.display = "block";
+
+          // Make the API call
+          fetch("/process-file", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.error) {
+                alert(data.error);
+              } else {
+                // Hide the loading bar
+                loadingBar.style.display = "none";
+
+                // Show the output
+                const outputContainer =
+                  document.getElementById("output-container");
+                const outputBox = document.getElementById("output-box");
+                const downloadBtn = document.getElementById("download-btn");
+
+                outputContainer.style.display = "block";
+                outputBox.innerHTML =
+                  "<pre>" + JSON.stringify(data.output, null, 2) + "</pre>";
+                downloadBtn.style.display = "block";
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("An error occurred while processing the file.");
+              loadingBar.style.display = "none";
+            });
+        });
+    </script>
+
+    <!-- Script for Dark Mode Toggle -->
+    <script>
+      // Check localStorage for saved mode
+      const body = document.body;
+      const toggleBtn = document.getElementById("toggle-btn");
+      const mode = localStorage.getItem("mode");
+
+      // Set mode on page load
+      if (mode === "dark") {
+        body.classList.add("dark-mode");
+        toggleBtn.innerText = "Light Mode";
+      }
+
+      // Toggle mode on button click
+      toggleBtn.addEventListener("click", function () {
+        body.classList.toggle("dark-mode");
+        const currentMode = body.classList.contains("dark-mode")
+          ? "dark"
+          : "light";
+        toggleBtn.innerText =
+          currentMode === "dark" ? "Light Mode" : "Dark Mode";
+        localStorage.setItem("mode", currentMode);
+      });
+    </script>
+
+    <!-- Script to disable back/forward navigation and handle logout -->
+    <script>
+      // Disable the back button from navigating back to the dashboard
+      window.history.pushState(null, null, window.location.href);
+      window.onpopstate = function () {
+        window.history.go(1); // Prevent going back
+        fetch("/logout", { method: "POST" }) // Log out the user if they attempt to go back
+          .then(() => {
+            window.location.href = "/"; // Redirect to login page
+          });
+      };
+
+      // Add event listener to prevent forward button functionality
+      window.onload = function () {
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+          history.go(1);
+        };
+      };
+    </script>
+  </body>
+</html>

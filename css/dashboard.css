@@ -1,0 +1,209 @@
+/* General styling for the html and body */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "Arial", sans-serif;
+  background-color: #f9f9f9;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Align content to the top for scrolling */
+  overflow-y: auto; /* Allow vertical scrolling */
+}
+
+/* Full-screen container */
+.container {
+  display: flex;
+  width: 100%;
+  min-height: 100%; /* Allow the content to grow */
+  box-shadow: none;
+  overflow-y: auto; /* Ensure the container can scroll vertically */
+}
+
+/* Title styling */
+.main-title h1 {
+  font-size: 3rem;
+  background: linear-gradient(270deg, #ff4d4d, #ff7373, #ff0000);
+  background-size: 400% 400%;
+  animation: wavey-gradient 8s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+/* Light grey side ribbon styling */
+.side-ribbon {
+  background-color: #f0f0f0;
+  width: 20%;
+  min-height: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding-left: 20px;
+  overflow-y: auto; /* Allow scrolling on the side ribbon */
+}
+
+.side-ribbon img {
+  max-width: 90%;
+}
+
+/* Main content styling */
+.main-content {
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+  overflow-y: auto; /* Allow the main content to scroll if necessary */
+}
+
+/* File input styling */
+.file-label {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  display: block;
+}
+
+input[type="file"] {
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+/* Upload button styling */
+button.upload-btn {
+  padding: 12px 30px;
+  background-color: red;
+  color: white;
+  border: none;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button.upload-btn:hover {
+  background-color: darkred;
+}
+
+/* Loading bar styling */
+.loading-bar {
+  margin-top: 20px;
+}
+
+.progress-bar {
+  width: 100%;
+  background-color: #ddd;
+}
+
+.progress {
+  width: 0;
+  height: 30px;
+  background-color: red;
+  animation: progress-animation 2s linear infinite;
+}
+
+@keyframes progress-animation {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+/* Output container styling */
+.output-container {
+  margin-top: 20px;
+}
+
+/* Make the output box wider */
+.output-box {
+  width: 100%; /* Increased width */
+  max-width: 100%;
+  overflow: auto;
+  margin-top: 20px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 20px; /* Keep padding for spacing */
+  border-radius: 10px; /* Optional: rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: subtle shadow */
+}
+
+/* Add gap between output box and download button */
+.download-btn {
+  padding: 12px 30px;
+  background-color: red;
+  color: white;
+  border: none;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 20px; /* Adds gap between the output box and the download button */
+}
+
+.download-btn:hover {
+  background-color: darkred;
+}
+
+/* Dark mode for body */
+body.dark-mode {
+  background-color: #222;
+  color: #f4f4f9;
+}
+
+/* Dark mode styling for input boxes, headings, etc. */
+body.dark-mode .input-box input {
+  background-color: #444;
+  color: #fff;
+  border-color: #777;
+}
+
+body.dark-mode .side-ribbon {
+  background-color: #333;
+}
+
+body.dark-mode .main-title h1 {
+  -webkit-text-fill-color: #ff4d4d;
+}
+
+/* Dark mode styling for buttons */
+button.dark-mode {
+  background-color: #444;
+}
+
+button.dark-mode:hover {
+  background-color: #222;
+}
+/* Styling for all buttons (Upload, Logout, Dark Mode) */
+button,
+.toggle-btn,
+.upload-btn {
+  padding: 12px 30px;
+  background-color: red;
+  color: white;
+  border: none;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 10px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+/* Hover effect for all buttons */
+button:hover,
+.toggle-btn:hover,
+.upload-btn:hover {
+  background-color: darkred;
+}

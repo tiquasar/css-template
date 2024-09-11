@@ -79,10 +79,36 @@
             Download as JSON
           </button>
         </div>
+
+        <!-- Privacy Policy and Help buttons -->
+        <div class="left-buttons">
+          <button id="privacy-btn" class="action-btn">Privacy Policy</button>
+          <button id="help-btn" class="action-btn">Help</button>
+        </div>
       </div>
     </div>
 
-    <!-- Script to handle file upload -->
+    <!-- Privacy Policy Dialog Box -->
+    <div id="privacy-dialog" class="dialog">
+      <p>
+        This is the Privacy Policy message. For more details, visit
+        <a href="https://www.privacypolicy.com" target="_blank"
+          >our privacy policy</a
+        >.
+      </p>
+      <button class="close-dialog" id="close-privacy-dialog">Close</button>
+    </div>
+
+    <!-- Help Dialog Box -->
+    <div id="help-dialog" class="dialog">
+      <p>
+        Need Help? Visit our support page
+        <a href="https://www.help.com" target="_blank">here</a>.
+      </p>
+      <button class="close-dialog" id="close-help-dialog">Close</button>
+    </div>
+
+    <!-- Script to handle file upload and dialogs -->
     <script>
       document
         .getElementById("upload-btn")
@@ -135,10 +161,9 @@
                   downloadJsonBtn.style.display = "block";
 
                   downloadJsonBtn.addEventListener("click", function () {
-                    const jsonBlob = new Blob(
-                      [JSON.stringify(data, null, 4)],
-                      { type: "application/json" }
-                    );
+                    const jsonBlob = new Blob([JSON.stringify(data, null, 4)], {
+                      type: "application/json",
+                    });
                     const downloadUrl = URL.createObjectURL(jsonBlob);
 
                     const tempLink = document.createElement("a");
@@ -177,6 +202,32 @@
         toggleBtn.innerText =
           currentMode === "dark" ? "Light Mode" : "Dark Mode";
         localStorage.setItem("mode", currentMode);
+      });
+
+      // Privacy Policy and Help Dialog Box handling
+      const privacyBtn = document.getElementById("privacy-btn");
+      const helpBtn = document.getElementById("help-btn");
+      const privacyDialog = document.getElementById("privacy-dialog");
+      const helpDialog = document.getElementById("help-dialog");
+      const closePrivacyDialog = document.getElementById(
+        "close-privacy-dialog"
+      );
+      const closeHelpDialog = document.getElementById("close-help-dialog");
+
+      privacyBtn.addEventListener("click", function () {
+        privacyDialog.style.display = "block";
+      });
+
+      closePrivacyDialog.addEventListener("click", function () {
+        privacyDialog.style.display = "none";
+      });
+
+      helpBtn.addEventListener("click", function () {
+        helpDialog.style.display = "block";
+      });
+
+      closeHelpDialog.addEventListener("click", function () {
+        helpDialog.style.display = "none";
       });
     </script>
   </body>

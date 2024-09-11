@@ -10,16 +10,16 @@
     />
   </head>
   <body>
-    <!-- Logout button (increased separation from Dark Mode button) -->
+    <!-- Logout button -->
     <form
       action="/logout"
       method="post"
-      style="position: absolute; top: 20px; right: 180px"
+      style="position: absolute; top: 20px; right: 200px"
     >
       <button type="submit" class="toggle-btn">Logout</button>
     </form>
 
-    <!-- Dark mode toggle button (increased separation from Logout button) -->
+    <!-- Dark mode toggle button -->
     <button
       id="toggle-btn"
       class="toggle-btn"
@@ -41,10 +41,16 @@
         </div>
 
         <!-- File Upload Form -->
-        <label for="file" class="file-label"
-          >Select an XLSX file to upload:</label
+        <label for="jsonFile" class="file-label"
+          >Select a JSON file (required):</label
         >
-        <input type="file" id="file" accept=".xlsx" required />
+        <input type="file" id="jsonFile" accept=".json" required />
+
+        <label for="xlsxFile" class="file-label"
+          >Select an optional XLSX file:</label
+        >
+        <input type="file" id="xlsxFile" accept=".xlsx" />
+
         <button id="upload-btn" class="upload-btn">Upload</button>
 
         <!-- Loading bar (hidden initially) -->
@@ -63,13 +69,15 @@
         >
           <h2>Generated Output:</h2>
           <div id="output-box" class="output-box"></div>
-          <a
-            href="{{ url_for('download_csv') }}"
-            id="download-btn"
+
+          <!-- Download JSON button (hidden initially) -->
+          <button
+            id="download-json-btn"
             class="download-btn"
             style="display: none"
-            >Download as CSV</a
           >
+            Download as JSON
+          </button>
         </div>
       </div>
     </div>
@@ -79,73 +87,83 @@
       document
         .getElementById("upload-btn")
         .addEventListener("click", function () {
-          const fileInput = document.getElementById("file");
-          const file = fileInput.files[0];
+          const jsonFile = document.getElementById("jsonFile").files[0];
+          const xlsxFile = document.getElementById("xlsxFile").files[0];
 
-          if (!file) {
-            alert("Please select a file!");
-            return;
-          }
-
-          if (!file.name.endsWith(".xlsx")) {
-            alert("Only XLSX files are allowed!");
+          if (!jsonFile) {
+            alert("Please select a JSON file (required)!");
             return;
           }
 
           const formData = new FormData();
-          formData.append("file", file);
+          formData.append("jsonFile", jsonFile);
+
+          if (xlsxFile) {
+            formData.append("xlsxFile", xlsxFile);
+          }
 
           // Show loading bar
           const loadingBar = document.getElementById("loading-bar");
           loadingBar.style.display = "block";
 
           // Make the API call
-          fetch("/process-file", {
+          fetch("/process-files", {
             method: "POST",
             body: formData,
           })
             .then((response) => response.json())
             .then((data) => {
-              if (data.error) {
-                alert(data.error);
-              } else {
-                // Hide the loading bar
-                loadingBar.style.display = "none";
+              // Hide the loading bar
+              loadingBar.style.display = "none";
 
-                // Show the output
-                const outputContainer =
-                  document.getElementById("output-container");
-                const outputBox = document.getElementById("output-box");
-                const downloadBtn = document.getElementById("download-btn");
+              // Show the output
+              const outputContainer =
+                document.getElementById("output-container");
+              const outputBox = document.getElementById("output-box");
+              const downloadJsonBtn =
+                document.getElementById("download-json-btn");
 
-                outputContainer.style.display = "block";
-                outputBox.innerHTML =
-                  "<pre>" + JSON.stringify(data.output, null, 2) + "</pre>";
-                downloadBtn.style.display = "block";
-              }
+              outputContainer.style.display = "block";
+              outputBox.innerHTML =
+                "<pre>" + JSON.stringify(data, null, 4) + "</pre>";
+
+              // Show the download button
+              downloadJsonBtn.style.display = "block";
+
+              // Set up the JSON download button functionality
+              downloadJsonBtn.addEventListener("click", function () {
+                const jsonBlob = new Blob([JSON.stringify(data, null, 4)], {
+                  type: "application/json",
+                });
+                const downloadUrl = URL.createObjectURL(jsonBlob);
+
+                // Create a temporary link and trigger download
+                const tempLink = document.createElement("a");
+                tempLink.href = downloadUrl;
+                tempLink.download = "generated_output.json";
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                document.body.removeChild(tempLink);
+              });
             })
             .catch((error) => {
               console.error("Error:", error);
-              alert("An error occurred while processing the file.");
+              alert("An error occurred while processing the files.");
               loadingBar.style.display = "none";
             });
         });
-    </script>
 
-    <!-- Script for Dark Mode Toggle -->
-    <script>
-      // Check localStorage for saved mode
-      const body = document.body;
+      // Dark mode toggle functionality
       const toggleBtn = document.getElementById("toggle-btn");
-      const mode = localStorage.getItem("mode");
+      const body = document.body;
 
-      // Set mode on page load
-      if (mode === "dark") {
+      // Check saved mode on page load
+      const savedMode = localStorage.getItem("mode");
+      if (savedMode === "dark") {
         body.classList.add("dark-mode");
         toggleBtn.innerText = "Light Mode";
       }
 
-      // Toggle mode on button click
       toggleBtn.addEventListener("click", function () {
         body.classList.toggle("dark-mode");
         const currentMode = body.classList.contains("dark-mode")
@@ -155,27 +173,6 @@
           currentMode === "dark" ? "Light Mode" : "Dark Mode";
         localStorage.setItem("mode", currentMode);
       });
-    </script>
-
-    <!-- Script to disable back/forward navigation and handle logout -->
-    <script>
-      // Disable the back button from navigating back to the dashboard
-      window.history.pushState(null, null, window.location.href);
-      window.onpopstate = function () {
-        window.history.go(1); // Prevent going back
-        fetch("/logout", { method: "POST" }) // Log out the user if they attempt to go back
-          .then(() => {
-            window.location.href = "/"; // Redirect to login page
-          });
-      };
-
-      // Add event listener to prevent forward button functionality
-      window.onload = function () {
-        history.pushState(null, null, location.href);
-        window.onpopstate = function () {
-          history.go(1);
-        };
-      };
     </script>
   </body>
 </html>

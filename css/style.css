@@ -20,65 +20,38 @@ body {
   box-shadow: none;
 }
 
-/* Wavey gradient for the title */
-.main-title h1 {
-  font-size: 3rem;
-  background: linear-gradient(
-    270deg,
-    #ff4d4d,
-    #ff7373,
-    #ff0000
-  ); /* Wavey gradient */
-  background-size: 400% 400%;
-  animation: wavey-gradient 8s ease infinite; /* Infinite wave animation */
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent; /* Gradient text */
-  font-family: "Poppins", sans-serif; /* Use Google Font */
-  font-weight: 600; /* Bold weight */
-  text-align: center;
-  margin-bottom: 20px;
-}
-
 /* Light grey side ribbon styling */
 .side-ribbon {
   background-color: #f0f0f0; /* Light grey */
   width: 20%;
   height: 100%; /* Full height */
   display: flex;
-  justify-content: flex-start; /* Align logo to left */
-  align-items: center; /* Vertically center logo */
-  padding-left: 20px; /* Slight padding for alignment */
+  justify-content: center;
+  align-items: center;
 }
 
 .side-ribbon img {
   max-width: 90%;
 }
 
-/* Full-width main content styling (spanning the page) */
+/* Main content styling */
 .main-content {
-  width: 80%; /* Full width */
+  width: 80%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  text-align: center; /* Center-align the text */
+  text-align: center;
 }
 
+/* Login box */
 .login-box {
-  width: 100%; /* Full width */
-  padding: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: transparent; /* No background */
-  height: auto; /* Adjust based on content */
-}
-
-.login-box h2.login-heading {
-  margin-bottom: 20px;
-  font-size: 2rem;
-  color: #333; /* Plain black for the login heading */
+  background-color: transparent;
 }
 
 /* Input box styling */
@@ -96,26 +69,15 @@ body {
   border-radius: 5px;
   outline: none;
   font-size: 18px;
-  text-align: center; /* Center the placeholder text horizontally */
+  text-align: center;
   transition: border-color 0.3s ease;
 }
 
-/* Placeholder styling */
-.input-box input::placeholder {
-  color: rgba(
-    0,
-    0,
-    0,
-    0.5
-  ); /* Translucent (50% opacity) placeholder text */ /* Optional: to differentiate the placeholder text style */
-}
-
-/* On focus */
 .input-box input:focus {
   border-color: red;
 }
 
-/* Move label when input is focused or filled */
+/* Label styling */
 .input-box label {
   position: absolute;
   top: 50%;
@@ -133,8 +95,8 @@ body {
   color: red;
 }
 
-/* Centered login button with rounded corners */
-button {
+/* Login button styling */
+.login-btn {
   padding: 15px 30px;
   background-color: red;
   border: none;
@@ -142,31 +104,8 @@ button {
   cursor: pointer;
   font-size: 18px;
   transition: background-color 0.3s ease;
-  display: block;
-  margin: 20px auto; /* Center the button */
-  border-radius: 25px; /* Make the corners round */
 }
 
-button:hover {
+.login-btn:hover {
   background-color: darkred;
-}
-
-/* Error message styling */
-.error {
-  color: red;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-/* Keyframes for the wavey gradient animation */
-@keyframes wavey-gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
 }

@@ -10,11 +10,12 @@ html {
   overflow-y: auto; /* Allow page scrolling */
 }
 
-/* Styling for all buttons (Upload, Logout, Dark Mode, Download JSON) */
+/* Styling for all buttons (Upload, Logout, Dark Mode, Download JSON, Privacy, Help) */
 button,
 .toggle-btn,
 .upload-btn,
-.download-btn {
+.download-btn,
+.action-btn {
   padding: 12px 30px;
   background-color: red;
   color: white;
@@ -33,7 +34,8 @@ button,
 button:hover,
 .toggle-btn:hover,
 .upload-btn:hover,
-.download-btn:hover {
+.download-btn:hover,
+.action-btn:hover {
   background-color: darkred;
 }
 
@@ -126,6 +128,50 @@ input[type="file"] {
 /* Add margin between the output box and the Download JSON button */
 .download-btn {
   margin-top: 30px; /* Adds space between output box and the button */
+}
+
+/* Dialog box styling (soft rectangle shape) */
+.dialog {
+  display: none;
+  background-color: white;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 20px; /* Soft rectangle shape with slight rounding */
+  width: 400px;
+  height: 200px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  z-index: 1000;
+}
+
+.dialog p {
+  margin-bottom: 20px;
+}
+
+.dialog a {
+  color: blue;
+  text-decoration: underline;
+}
+
+.dialog a:hover {
+  color: darkblue;
+}
+
+.close-dialog {
+  padding: 10px 20px;
+  background-color: red;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.close-dialog:hover {
+  background-color: darkred;
 }
 
 /* Dark mode styling */

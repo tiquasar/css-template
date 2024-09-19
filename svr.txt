@@ -333,9 +333,36 @@ if __name__ == '__main__':
 
 
 
+def calculate_entity_positions(text, ner_results):
+    entities = []
+    for entity, label in ner_results:
+        start_char = text.find(entity)
+        if start_char == -1:
+            raise ValueError(f"Entity '{entity}' not found in the text.")
+        end_char = start_char + len(entity)
+        entities.append((start_char, end_char, label))
+    return entities
+
+
+
+# Example text and ner_results
+text = "PLALPLL GILS is a company. phoenix hold is another company."
+ner_results = [('PLALPLL GILS', 'ORG'), ('phoenix hold', 'ORG')]
+
+# Calculate the start_char and end_char for each entity
+training_data = {
+    "text": text,
+    "entities": calculate_entity_positions(text, ner_results)
+}
+
+# Example training data now looks like this:
+# {
+#     "text": "PLALPLL GILS is a company. phoenix hold is another company.",
+#     "entities": [(0, 12, 'ORG'), (25, 37, 'ORG')]
+# }
+
 # Background task: Incrementally train spaCy model (updated for spaCy 3.x)
 def retrain_spacy_model(new_data, model_type):
-    # Select which model to retrain: small model or transformer
     if model_type == 'sm':
         model_path = MODEL_PATH_SM
         nlp = nlp_sm
@@ -344,35 +371,29 @@ def retrain_spacy_model(new_data, model_type):
         nlp = nlp_trf
 
     # Ensure the entities are formatted as (start_char, end_char, label)
-    entities = []
-    for entity in new_data['entities']:
-        if isinstance(entity, tuple) and len(entity) == 4:
-            text, label, start_char, end_char = entity
-            entities.append((start_char, end_char, label))
-        else:
-            raise ValueError(f"Entity {entity} is not in the correct format (text, label, start_char, end_char)")
-
-    # Filter out overlapping entities
-    filtered_entities = filter_overlapping_entities(entities)
+    entities = new_data['entities']
 
     # Create training data in spaCy format using Example
-    TRAINING_DATA = [(new_data['text'], {"entities": filtered_entities})]
+    TRAINING_DATA = [(new_data['text'], {"entities": entities})]
     examples = []
 
-    # Create Example objects
     for text, annotations in TRAINING_DATA:
-        doc = nlp.make_doc(text)  # Create a spaCy Doc object from the text
-        example = Example.from_dict(doc, annotations)  # Create Example object from doc and annotations
+        doc = nlp.make_doc(text)  # Create a spaCy Doc object
+        example = Example.from_dict(doc, annotations)  # Create Example object
         examples.append(example)
 
     # Train the spaCy model using Example objects
     ner = nlp.get_pipe("ner")
     optimizer = nlp.resume_training()
-
+    
     for itn in range(10):  # 10 iterations of training
         nlp.update(examples, sgd=optimizer, drop=0.5)
 
     # Save the updated model to disk
     nlp.to_disk(model_path)
     logging.info(f"{model_type.upper()} model trained and saved to {model_path}")
+
+# Run the background task
+train_in_background(training_data)
+
 

@@ -99,17 +99,17 @@ def perform_ner(text):
     doc_trf = nlp_trf(text)
 
     # Extract entities from both models
-    entities_sm = [(ent.text, ent.label_) for ent in doc_sm.ents]
-    entities_trf = [(ent.text, ent.label_) for ent in doc_trf.ents]
+    entities_sm = [(ent.text, ent.label_, ent.start_char, ent.end_char) for ent in doc_sm.ents]
+    entities_trf = [(ent.text, ent.label_, ent.start_char, ent.end_char) for ent in doc_trf.ents]
 
     # Combine the results, preferring transformer results if there’s overlap
-    combined_entities = {ent[0]: ent[1] for ent in entities_trf}
+    combined_entities = {ent[0]: (ent[1], ent[2], ent[3]) for ent in entities_trf}
     for ent in entities_sm:
         if ent[0] not in combined_entities:
-            combined_entities[ent[0]] = ent[1]
+            combined_entities[ent[0]] = (ent[1], ent[2], ent[3])
 
     # Return the combined entity list
-    return [(entity, label) for entity, label in combined_entities.items()]
+    return [(entity, label, start, end) for entity, (label, start, end) in combined_entities.items()]
 
 # Insert NER results into PostgreSQL
 def store_ner_in_db(file_name_pattern, ner_results):
@@ -157,8 +157,17 @@ def retrain_spacy_model(new_data, model_type):
         model_path = MODEL_PATH_TRF
         nlp = nlp_trf
 
+    # Ensure the entities are formatted as (start_char, end_char, label)
+    entities = []
+    for entity in new_data['entities']:
+        if isinstance(entity, tuple) and len(entity) == 4:
+            text, label, start_char, end_char = entity
+            entities.append((start_char, end_char, label))
+        else:
+            raise ValueError(f"Entity {entity} is not in the correct format (text, label, start_char, end_char)")
+
     # Create training data in spaCy format using Example
-    TRAINING_DATA = [(new_data['text'], {"entities": new_data['entities']})]
+    TRAINING_DATA = [(new_data['text'], {"entities": entities})]
     examples = []
 
     for text, annotations in TRAINING_DATA:
@@ -276,7 +285,7 @@ def ner_api():
             # Train the spaCy model with the new data in the background
             training_data = {
                 "text": text,
-                "entities": [(ent[0], ent[1], label) for ent, label in ner_results]
+                "entities": ner_results  # Passing ner_results directly as entities
             }
             train_in_background(training_data)
 

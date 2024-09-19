@@ -115,7 +115,7 @@ def perform_ner(text):
     doc_sm = nlp_sm(text)
     doc_trf = nlp_trf(text)
 
-    # Extract entities from both models
+    # Extract entities from both models (with start_char, end_char, label, text)
     entities_sm = [(ent.text, ent.label_, ent.start_char, ent.end_char) for ent in doc_sm.ents]
     entities_trf = [(ent.text, ent.label_, ent.start_char, ent.end_char) for ent in doc_trf.ents]
 
@@ -125,7 +125,7 @@ def perform_ner(text):
         if ent[0] not in combined_entities:
             combined_entities[ent[0]] = (ent[1], ent[2], ent[3])
 
-    # Return the combined entity list
+    # Return the combined entity list (text, label, start_char, end_char)
     return [(entity, label, start, end) for entity, label, start, end in combined_entities.items()]
 
 # Insert NER results into PostgreSQL

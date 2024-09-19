@@ -93,6 +93,23 @@ def preprocess_text(text):
     text = re.sub(r'[^\w\s]', '', text)  # Remove special characters
     return text.strip()
 
+# Helper function to check if two entities overlap
+def entities_overlap(start1, end1, start2, end2):
+    return max(start1, start2) < min(end1, end2)
+
+# Function to filter out overlapping entities
+def filter_overlapping_entities(entities):
+    non_overlapping_entities = []
+    for i, (start1, end1, label1) in enumerate(entities):
+        overlap = False
+        for j, (start2, end2, label2) in enumerate(entities):
+            if i != j and entities_overlap(start1, end1, start2, end2):
+                overlap = True
+                break
+        if not overlap:
+            non_overlapping_entities.append((start1, end1, label1))
+    return non_overlapping_entities
+
 # Perform NER using both spaCy models and combine results
 def perform_ner(text):
     doc_sm = nlp_sm(text)
@@ -109,7 +126,7 @@ def perform_ner(text):
             combined_entities[ent[0]] = (ent[1], ent[2], ent[3])
 
     # Return the combined entity list
-    return [(entity, label, start, end) for entity, (label, start, end) in combined_entities.items()]
+    return [(entity, label, start, end) for entity, label, start, end in combined_entities.items()]
 
 # Insert NER results into PostgreSQL
 def store_ner_in_db(file_name_pattern, ner_results):
@@ -166,8 +183,11 @@ def retrain_spacy_model(new_data, model_type):
         else:
             raise ValueError(f"Entity {entity} is not in the correct format (text, label, start_char, end_char)")
 
+    # Filter out overlapping entities
+    filtered_entities = filter_overlapping_entities(entities)
+
     # Create training data in spaCy format using Example
-    TRAINING_DATA = [(new_data['text'], {"entities": entities})]
+    TRAINING_DATA = [(new_data['text'], {"entities": filtered_entities})]
     examples = []
 
     for text, annotations in TRAINING_DATA:
@@ -204,6 +224,17 @@ def ner_similarity(ner1, ner2):
 
     total_similarity = 0
 
+    # Convert to sets for more robust comparison (ignores order)
+    ner1_set = set([(ent[0], ent[1]) for ent in ner1])  # (text, label)
+    ner2_set = set([(ent[0], ent[1]) for ent in ner2])
+
+    # Find matching entities in both sets
+    common_entities = ner1_set.intersection(ner2_set)
+
+    # Calculate the number of matching entities
+    matching_entities = len(common_entities)
+    
+    # Calculate fuzzy similarity for non-exact matches
     for ent1 in ner1:
         for ent2 in ner2:
             if ent1[1] == ent2[1]:  # Compare entity types (e.g., PERSON to PERSON)
@@ -225,9 +256,9 @@ def ner_similarity(ner1, ner2):
                 total_similarity += combined_similarity
                 matching_entities += 1
 
-    if matching_entities > 0:
-        # Calculate the average similarity and ensure it’s in percentage (0-100)
-        similarity_percentage = total_similarity / matching_entities
+    # Calculate the final similarity percentage
+    if total_entities > 0:
+        similarity_percentage = (matching_entities / total_entities) * 100
         return similarity_percentage
     else:
         return 0

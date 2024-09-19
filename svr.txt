@@ -93,29 +93,12 @@ def preprocess_text(text):
     text = re.sub(r'[^\w\s]', '', text)  # Remove special characters
     return text.strip()
 
-# Helper function to check if two entities overlap
-def entities_overlap(start1, end1, start2, end2):
-    return max(start1, start2) < min(end1, end2)
-
-# Function to filter out overlapping entities
-def filter_overlapping_entities(entities):
-    non_overlapping_entities = []
-    for i, (start1, end1, label1) in enumerate(entities):
-        overlap = False
-        for j, (start2, end2, label2) in enumerate(entities):
-            if i != j and entities_overlap(start1, end1, start2, end2):
-                overlap = True
-                break
-        if not overlap:
-            non_overlapping_entities.append((start1, end1, label1))
-    return non_overlapping_entities
-
 # Perform NER using both spaCy models and combine results
 def perform_ner(text):
     doc_sm = nlp_sm(text)
     doc_trf = nlp_trf(text)
 
-    # Extract entities from both models (with start_char, end_char, label, text)
+    # Extract entities from both models (ensure format with start_char, end_char, label, text)
     entities_sm = [(ent.text, ent.label_, ent.start_char, ent.end_char) for ent in doc_sm.ents]
     entities_trf = [(ent.text, ent.label_, ent.start_char, ent.end_char) for ent in doc_trf.ents]
 
@@ -157,7 +140,16 @@ def get_ner_from_db(file_name_pattern):
         query = "SELECT ner_results FROM ner_results WHERE file_name_pattern = %s"
         cur.execute(query, (file_name_pattern,))
         result = cur.fetchone()
-        return result[0] if result else None
+
+        # Ensure the result contains the expected format (text, label, start_char, end_char)
+        if result:
+            ner_results = result[0]
+            for entity in ner_results:
+                if len(entity) != 4:
+                    raise ValueError(f"NER result {entity} does not have 4 values (expected text, label, start_char, end_char)")
+            return ner_results
+        else:
+            return None
     except Exception as e:
         logging.error(f"Error retrieving NER from DB: {e}")
     finally:

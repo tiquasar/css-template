@@ -397,3 +397,64 @@ def retrain_spacy_model(new_data, model_type):
 train_in_background(training_data)
 
 
+
+
+
+
+def filter_overlapping_entities(entities):
+    # Sort entities by their start_char position
+    entities = sorted(entities, key=lambda x: x[0])
+    non_overlapping_entities = []
+
+    # Track the end of the last added entity
+    last_end_char = -1
+
+    for start_char, end_char, label in entities:
+        # Only add entities that don't overlap with the last entity
+        if start_char >= last_end_char:
+            non_overlapping_entities.append((start_char, end_char, label))
+            last_end_char = end_char
+
+    return non_overlapping_entities
+
+def calculate_entity_positions(text, ner_results):
+    entities = []
+    for entity, label in ner_results:
+        start_char = text.find(entity)
+        if start_char == -1:
+            raise ValueError(f"Entity '{entity}' not found in the text.")
+        end_char = start_char + len(entity)
+        entities.append((start_char, end_char, label))
+    return filter_overlapping_entities(entities)  # Filter overlapping entities
+
+def retrain_spacy_model(new_data, model_type):
+    if model_type == 'sm':
+        model_path = MODEL_PATH_SM
+        nlp = nlp_sm
+    else:
+        model_path = MODEL_PATH_TRF
+        nlp = nlp_trf
+
+    # Calculate and filter entities for overlaps
+    entities = new_data['entities']
+
+    # Create training data in spaCy format using Example
+    TRAINING_DATA = [(new_data['text'], {"entities": entities})]
+    examples = []
+
+    for text, annotations in TRAINING_DATA:
+        doc = nlp.make_doc(text)  # Create a spaCy Doc object
+        example = Example.from_dict(doc, annotations)  # Create Example object
+        examples.append(example)
+
+    # Train the spaCy model using Example objects
+    ner = nlp.get_pipe("ner")
+    optimizer = nlp.resume_training()
+    
+    for itn in range(10):  # 10 iterations of training
+        nlp.update(examples, sgd=optimizer, drop=0.5)
+
+    # Save the updated model to disk
+    nlp.to_disk(model_path)
+    logging.info(f"{model_type.upper()} model trained and saved to {model_path}")
+

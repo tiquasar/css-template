@@ -9,6 +9,7 @@ from psycopg2.extras import Json
 from fuzzywuzzy import fuzz
 import logging
 import threading
+from spacy.training import Example
 
 app = Flask(__name__)
 
@@ -146,11 +147,8 @@ def get_ner_from_db(file_name_pattern):
         cur.close()
         conn.close()
 
-# Background task: Incrementally train spaCy model
+# Background task: Incrementally train spaCy model (updated for spaCy 3.x)
 def retrain_spacy_model(new_data, model_type):
-    # Create training data in spaCy format
-    TRAINING_DATA = [(new_data['text'], {"entities": new_data['entities']})]
-
     # Select which model to retrain: small model or transformer
     if model_type == 'sm':
         model_path = MODEL_PATH_SM
@@ -159,12 +157,21 @@ def retrain_spacy_model(new_data, model_type):
         model_path = MODEL_PATH_TRF
         nlp = nlp_trf
 
-    # Train the spaCy model
+    # Create training data in spaCy format using Example
+    TRAINING_DATA = [(new_data['text'], {"entities": new_data['entities']})]
+    examples = []
+
+    for text, annotations in TRAINING_DATA:
+        doc = nlp.make_doc(text)  # Create a spaCy Doc object
+        example = Example.from_dict(doc, annotations)  # Create Example object
+        examples.append(example)
+
+    # Train the spaCy model using Example objects
     ner = nlp.get_pipe("ner")
     optimizer = nlp.resume_training()
+    
     for itn in range(10):  # 10 iterations of training
-        for text, annotations in TRAINING_DATA:
-            nlp.update([text], [annotations], drop=0.5, sgd=optimizer)
+        nlp.update(examples, sgd=optimizer, drop=0.5)
 
     # Save the updated model to disk
     nlp.to_disk(model_path)
@@ -186,24 +193,35 @@ def ner_similarity(ner1, ner2):
     matching_entities = 0
     total_entities = max(len(ner1), len(ner2))
 
+    total_similarity = 0
+
     for ent1 in ner1:
         for ent2 in ner2:
             if ent1[1] == ent2[1]:  # Compare entity types (e.g., PERSON to PERSON)
                 doc1 = nlp_sm(ent1[0])  # Use the small model for vectorization
                 doc2 = nlp_sm(ent2[0])
 
-                # Calculate cosine similarity between entity text vectors
-                cosine_sim = cosine_similarity_spacy(doc1, doc2)
+                # Calculate cosine similarity between entity text vectors (range 0-1)
+                cosine_sim = doc1.similarity(doc2)
 
-                # Use fuzzy matching for partial string similarity
+                # Scale cosine similarity to 0-100
+                cosine_sim_scaled = cosine_sim * 100
+
+                # Use fuzzy matching for partial string similarity (range 0-100)
                 fuzzy_sim = fuzz.token_sort_ratio(ent1[0], ent2[0])
 
-                # Combine cosine similarity and fuzzy similarity
-                similarity_score = 0.7 * cosine_sim + 0.3 * (fuzzy_sim / 100)
-                if similarity_score >= 0.9:  # Threshold for matching entities
-                    matching_entities += 1
+                # Combine cosine similarity and fuzzy similarity (70% cosine, 30% fuzzy)
+                combined_similarity = 0.7 * cosine_sim_scaled + 0.3 * fuzzy_sim
 
-    return (matching_entities / total_entities) * 100 if total_entities > 0 else 0
+                total_similarity += combined_similarity
+                matching_entities += 1
+
+    if matching_entities > 0:
+        # Calculate the average similarity and ensure it’s in percentage (0-100)
+        similarity_percentage = total_similarity / matching_entities
+        return similarity_percentage
+    else:
+        return 0
 
 @app.route('/ner', methods=['POST'])
 def ner_api():
@@ -245,12 +263,12 @@ def ner_api():
         
         if stored_ner:
             # Compare the new NER results with the stored ones
-            similarity = ner_similarity(stored_ner, ner_results)
+            similarity_percentage = ner_similarity(stored_ner, ner_results)
 
-            if similarity >= 90:
-                return jsonify({"status": "valid", "similarity": similarity}), 200
+            if similarity_percentage >= 90:
+                return jsonify({"status": "valid", "similarity_percentage": similarity_percentage}), 200
             else:
-                return jsonify({"status": "invalid", "similarity": similarity}), 200
+                return jsonify({"status": "invalid", "similarity_percentage": similarity_percentage}), 200
         else:
             # Store the NER results for future comparison in PostgreSQL
             store_ner_in_db(file_name_pattern, ner_results)

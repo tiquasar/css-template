@@ -321,3 +321,58 @@ def ner_api():
 # Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+
+
+
+
+
+
+
+
+
+# Background task: Incrementally train spaCy model (updated for spaCy 3.x)
+def retrain_spacy_model(new_data, model_type):
+    # Select which model to retrain: small model or transformer
+    if model_type == 'sm':
+        model_path = MODEL_PATH_SM
+        nlp = nlp_sm
+    else:
+        model_path = MODEL_PATH_TRF
+        nlp = nlp_trf
+
+    # Ensure the entities are formatted as (start_char, end_char, label)
+    entities = []
+    for entity in new_data['entities']:
+        if isinstance(entity, tuple) and len(entity) == 4:
+            text, label, start_char, end_char = entity
+            entities.append((start_char, end_char, label))
+        else:
+            raise ValueError(f"Entity {entity} is not in the correct format (text, label, start_char, end_char)")
+
+    # Filter out overlapping entities
+    filtered_entities = filter_overlapping_entities(entities)
+
+    # Create training data in spaCy format using Example
+    TRAINING_DATA = [(new_data['text'], {"entities": filtered_entities})]
+    examples = []
+
+    # Create Example objects
+    for text, annotations in TRAINING_DATA:
+        doc = nlp.make_doc(text)  # Create a spaCy Doc object from the text
+        example = Example.from_dict(doc, annotations)  # Create Example object from doc and annotations
+        examples.append(example)
+
+    # Train the spaCy model using Example objects
+    ner = nlp.get_pipe("ner")
+    optimizer = nlp.resume_training()
+
+    for itn in range(10):  # 10 iterations of training
+        nlp.update(examples, sgd=optimizer, drop=0.5)
+
+    # Save the updated model to disk
+    nlp.to_disk(model_path)
+    logging.info(f"{model_type.upper()} model trained and saved to {model_path}")
+
